@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View, Image, LayoutChangeEvent } from 'react-native';
 
 type Item = {
@@ -8,10 +8,14 @@ type Item = {
 
 const data: Item[] = Array.from({ length: 10 }).map((_, index) => ({
   id: index,
-  imageUrl: `https://picsum.photos/id/${index + 1}/500/500`
+  imageUrl: `https://picsum.photos/id/${index + 1}/800/1600`
 }));
 
 export default function App() {
+  useEffect(() => {
+    // fetch all data
+    Promise.all(data.map(item => fetch(item.imageUrl))).then(() => console.log('All images are fetched'));
+  }, []);
   return <Reel />
 }
 
@@ -32,7 +36,6 @@ function Reel() {
         horizontal={false}
         scrollEnabled={true}
         snapToInterval={screenHeight}
-        snapToAlignment="start"
         pagingEnabled={true}
         initialScrollIndex={0}
         scrollEventThrottle={16}
