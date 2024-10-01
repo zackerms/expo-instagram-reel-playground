@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View, Image, LayoutChangeEvent } from 'react-native';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { FlatList, StyleSheet, View, Image, LayoutChangeEvent, NativeSyntheticEvent, NativeScrollEvent, Pressable } from 'react-native';
 
 type Item = {
   id: number;
@@ -21,15 +21,58 @@ export default function App() {
 
 function Reel() {
   const [screenHeight, setScreenHeight] = useState(0);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   const handleOnLayout = (event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout;
     setScreenHeight(height);
   }
 
+  // ================================
+  // タップでページング
+
+  const flatListRef = useRef<FlatList>(null);
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+
+    const { contentOffset } = e.nativeEvent;
+    const currentPage = Math.floor(contentOffset.y / screenHeight);
+    if (currentPage >= 0 && currentPage <= data.length - 1) {
+      setCurrentPageIndex(currentPage);
+    }
+  };
+
+  const onTapPrev = () => {
+    const isFirstPage = currentPageIndex === 0;
+    if (isFirstPage) {
+      return;
+    }
+
+    flatListRef.current?.scrollToIndex({
+      index: currentPageIndex - 1,
+      animated: true,
+    });
+  }
+
+  const onTapNext = () => {
+    const isLastPage = currentPageIndex === data.length - 1;
+    if (isLastPage) {
+      return;
+    }
+
+    flatListRef.current?.scrollToIndex({
+      index: currentPageIndex + 1,
+      animated: true,
+    });
+  };
+
+  // タップでページング
+  // ================================
+
   return (
     <View style={styles.container} onLayout={handleOnLayout}>
       <FlatList
+        ref={flatListRef}
         data={data}
         disableIntervalMomentum={true}
         numColumns={1}
@@ -39,6 +82,7 @@ function Reel() {
         pagingEnabled={true}
         initialScrollIndex={0}
         scrollEventThrottle={16}
+        onScroll={onScroll}
         getItemLayout={(_, index) => ({
           index,
           length: screenHeight,
@@ -49,15 +93,38 @@ function Reel() {
             key={index}
             style={{ width: "100%", height: screenHeight }}
           >
-            <Image
-              source={{ uri: item?.imageUrl }}
-              style={styles.image}
-            />
+            <TapPager
+              onPrev={onTapPrev}
+              onNext={onTapNext}
+            >
+              <Image
+                source={{ uri: item?.imageUrl }}
+                style={styles.image}
+              />
+            </TapPager>
           </View>
         )}
       />
     </View>
   );
+}
+
+function TapPager({
+  onPrev,
+  onNext,
+  children
+}: {
+  onPrev: () => void;
+  onNext: () => void;
+  children?: ReactNode;
+}) {
+  return <View style={styles.tapPagerContainer}>
+    {children}
+    <View style={styles.tapPager}>
+      <Pressable style={styles.tapPagerButton} onPress={onPrev} />
+      <Pressable style={styles.tapPagerButton} onPress={onNext} />
+    </View>
+  </View>
 }
 
 const styles = StyleSheet.create({
@@ -73,5 +140,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-  }
+  },
+  tapPagerContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  tapPager: {
+    display: 'flex',
+    flexDirection: 'row',
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  tapPagerButton: {
+    height: "100%",
+    flex: 1,
+  },
 });
