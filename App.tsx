@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
+    BackHandler,
     FlatList,
     Image,
     LayoutChangeEvent,
@@ -76,6 +77,30 @@ function Reel() {
 
     // タップでページング
     // ================================
+
+    // もどるボタンを押したときに前の画面に戻る
+    useEffect(() => {
+        const backToPrevPage = () => {
+            if (currentPageIndex === 0) {
+                return false;
+            }
+
+            flatListRef.current?.scrollToIndex({
+                index: currentPageIndex - 1,
+                animated: true,
+            });
+
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            backToPrevPage
+        );
+
+        return () => backHandler.remove();
+    }, [currentPageIndex]);
+
 
     return (<View style={styles.container} onLayout={handleOnLayout}>
         <FlatList
